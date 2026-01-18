@@ -1,0 +1,33 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[packages]
+attrs = "*"
+fastapi = "*"
+pydantic = "*"
+pydantic-settings = "*"
+SQLAlchemy = "*"
+alembic = "*"
+asyncpg = "*"
+greenlet = "*"
+aiogram = "*"
+python-telegram-bot = "*"
+langchain = "*"
+openai = "*"
+langgraph = "*"
+pgvector = "*"
+langchain-openai = "*"
+
+[dev-packages]
+mypy = "*"
+black = "*"
+ruff = "*"
+isort = "*"
+
+[scripts]
+format = "sh -c 'isort . && ruff check --fix . && black .'"
+check = "ruff check . && mypy"
+mypy = "mypy"
+main = "python main.py"

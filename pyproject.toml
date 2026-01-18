@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+per-file-ignores = { "alembic/env.py" = ["E402", "F403"] }
+
+[tool.isort]
+profile = "black"
+known_first_party = ["lib", "users", "llm"]
+src_paths = ["lib", "users", "llm"]
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]

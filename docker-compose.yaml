@@ -1,0 +1,22 @@
+
+version: "3.8"
+
+services:
+  database:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: palmaray_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: palmaray
+    ports:
+      - "5432:5432"
+    volumes:
+      - palmaray_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  palmaray_pgdata:
+    driver: local
