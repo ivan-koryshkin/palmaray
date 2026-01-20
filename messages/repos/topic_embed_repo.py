@@ -1,11 +1,11 @@
-from typing import Union, Tuple
+from typing import Tuple, Union
 
-from sqlalchemy import ColumnElement, and_, true, bindparam
+from messages.models import TopicEmbedModel
+from messages.types import TopicEmbedSqlFilter
+from sqlalchemy import ColumnElement, and_, bindparam, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lib.repo import GenericRepo
-from messages.models import TopicEmbedModel
-from messages.types import TopicEmbedSqlFilter
 
 
 def build_topic_embed_where(
@@ -33,6 +33,3 @@ def new_topic_embed_repo(session: AsyncSession) -> GenericRepo[TopicEmbedModel, 
         build_filter=build_topic_embed_where,
         session=session,
     )
-
-
-

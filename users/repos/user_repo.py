@@ -14,8 +14,4 @@ def build_user_where(model: UserModel, flt: UserSqlFilters | None) -> ColumnElem
 
 
 def new_user_repo(session: AsyncSession) -> GenericRepo[UserModel, UserSqlFilters]:
-    return GenericRepo(
-        model = UserModel,
-        build_filter = build_user_where,
-        session = session
-    )
+    return GenericRepo(model=UserModel, build_filter=build_user_where, session=session)

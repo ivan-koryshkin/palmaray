@@ -7,12 +7,13 @@ from messages.repos.topic_embed_repo import new_topic_embed_repo
 from messages.services.messages import create_message_history
 from messages.types import RoleEnum
 from messages.usecases.archive_messages import ArchiveMessages
-from messages.usecases.message_history import ReadShortHistory
+from messages.usecases.message_history import ReadShortHistory, ReadContextHistory
 from settings import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 
 from lib.database import atomic
 from lib.services import summarize_text, tokenize
@@ -20,28 +21,25 @@ from lib.services import summarize_text, tokenize
 
 @atomic
 async def on_message(session: AsyncSession, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    async def foo(user_id, topic_id: int) -> list:
-        return []
-
     message_repo = new_message_repo(session)
     topic_emb_repo = new_topic_embed_repo(session)
 
     request_to_llm = LlmRequest(
         llm=ChatOpenAI(model="gpt-5-nano-2025-08-07", openai_api_key=settings.OPENAI_API_KEY),
-        get_long_conversation_history=foo,
+        get_long_conversation_history=ReadContextHistory(
+            repo=topic_emb_repo,
+            tokenize=tokenize
+        ),
         get_short_conversation_history=ReadShortHistory(repo=message_repo),
         archive_conversation_history=ArchiveMessages(
             repo_msg=message_repo, repo_topic_embed=topic_emb_repo, tokenize=tokenize, summarize=summarize_text
         ),
     )
 
-    # send initial thinking message and start an animation loop that edits it
     stop_event = asyncio.Event()
-
     thinking_message = await update.message.reply_text("🤔 thinking")
-
     async def animate_thinking(msg, ev: asyncio.Event):
-        frames = ["Thinking 🤔", "Thinking 🤔🤔", "Thinking 🤔🤔🤔"]
+        frames = ["Thinking", "Thinking 🤔", "Thinking 🤔🤔", "Thinking 🤔🤔🤔"]
         i = 0
         try:
             while not ev.is_set():
@@ -62,15 +60,15 @@ async def on_message(session: AsyncSession, update: Update, context: ContextType
     )
 
     assistant_response: str = provider_result.get("response", "")
-    # stop animation and wait
     stop_event.set()
     if not anim_task.done():
         await anim_task
-
+    # Escape for the same parse mode we use to send (preserve original for storage)
+    safe_for_send = escape_markdown(assistant_response, version=1)
     try:
-        assistant_message = await thinking_message.edit_text(assistant_response, parse_mode=ParseMode.MARKDOWN)
+        assistant_message = await thinking_message.edit_text(safe_for_send, parse_mode=ParseMode.MARKDOWN)
     except Exception:
-        assistant_message = await update.message.reply_text(assistant_response, parse_mode=ParseMode.MARKDOWN)
+        assistant_message = await update.message.reply_text(safe_for_send, parse_mode=ParseMode.MARKDOWN)
     messages = [
         (update.message.id, RoleEnum.USER, update.message.text),
         (assistant_message.id, RoleEnum.ASSISTANT, assistant_response),

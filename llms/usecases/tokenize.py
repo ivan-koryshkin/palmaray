@@ -1,9 +1,8 @@
 import asyncio
-from typing import Optional, List
+from typing import List
 
 import attrs
 import openai
-
 from settings import settings
 
 EMBEDDING_DIM = 1536
@@ -20,5 +19,3 @@ class TokenizeUsecase:
         if len(vec) != EMBEDDING_DIM:
             raise ValueError(f"Unexpected embedding length: {len(vec)} != {EMBEDDING_DIM}")
         return vec
-
-

@@ -1,10 +1,9 @@
-import attrs
-from typing import Generic, TypeVar, Type
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, delete
 from collections.abc import Callable
-from typing import Mapping, Any, Type
+from typing import Any, Generic, Mapping, Type, TypeVar
+
+import attrs
+from sqlalchemy import delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import ColumnElement
 
 TModel = TypeVar("TModel")
@@ -27,7 +26,7 @@ class GenericRepo(Generic[TModel, TFilter]):
     async def create_bulk(self, models: list[TModel]) -> list[TModel]:
         if not models:
             return []
-        
+
         self.session.add_all(models)
         await self.session.flush()
         return models
@@ -49,7 +48,7 @@ class GenericRepo(Generic[TModel, TFilter]):
         self.session.delete(obj)
         await self.session.flush()
         return True
-    
+
     async def delete_bulk(self, ids: list[PK_TYPE]) -> bool:
         if not ids:
             return False
@@ -81,5 +80,3 @@ class GenericRepo(Generic[TModel, TFilter]):
             stmt = stmt.limit(limit)
         result = await self.session.execute(stmt)
         return result.scalars().all()
-
-

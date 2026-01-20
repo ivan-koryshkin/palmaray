@@ -1,7 +1,9 @@
-from lib.models import Base
-from sqlalchemy import Boolean, String, BigInteger, ForeignKey, Integer
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+
+from lib.models import Base
+from lib.sqlalchemy_encrypted import EncryptedType
 
 
 class TopicModel(Base):
@@ -17,17 +19,14 @@ class MessageModel(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     chat_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    text: Mapped[str] = mapped_column(String, nullable=False)
+    text: Mapped[str] = mapped_column(EncryptedType(), nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False)
     tokenized: Mapped[str] = mapped_column(Boolean, nullable=False, default=False)
     topic_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("topics.id"))
 
     def to_dict(self) -> dict[str, str]:
-        return {
-            "role": self.role,
-            "message": self.text
-        }
-    
+        return {"role": self.role, "message": self.text}
+
     def to_str(self) -> str:
         return f"{self.role}: {self.text}"
 
@@ -37,5 +36,5 @@ class TopicEmbedModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     topic_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("topics.id"), nullable=False)
-    chunk: Mapped[str] = mapped_column(String, nullable=False)
+    chunk: Mapped[str] = mapped_column(EncryptedType(), nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)

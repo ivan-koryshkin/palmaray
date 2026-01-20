@@ -1,9 +1,11 @@
 import attrs
-
+import asyncio
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from messages.models import MessageModel, TopicEmbedModel
+from messages.types import MessageSqlFilter, RoleEnum, TopicEmbedSqlFilter
+from collections.abc import Callable, Awaitable
 from lib.repo import GenericRepo
-from messages.models import MessageModel
-from messages.types import MessageSqlFilter, RoleEnum
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
+
 from .protocols import IDeleteMessages, IMessageSave, ITopicSave
 
 
@@ -20,22 +22,24 @@ class CreateMessageHistory:
         text: str,
         user_id: int,
         topic_id: int | None = None,
-        role: RoleEnum = RoleEnum.USER
+        role: RoleEnum = RoleEnum.USER,
     ) -> int:
         topic_id = await self.save_topic(
             id=topic_id,
             name=f"default topic {topic_id}",
             user_id=user_id,
         )
-        msg = await self.save_message(
+        save_task = self.save_message(
             message_id=message_id,
             chat_id=chat_id,
             text=text,
             topic_id=topic_id,
-            role=role
+            role=role,
         )
-        await self.delete_old_messages(topic_id, 15)
-        return msg
+        delete_task = self.delete_old_messages(topic_id, 15)
+
+        saved, _ = await asyncio.gather(save_task, delete_task)
+        return saved
 
 
 @attrs.frozen(kw_only=True, slots=True)
@@ -43,10 +47,7 @@ class ReadShortHistory:
     repo: GenericRepo[MessageModel, MessageSqlFilter]
 
     async def __call__(self, user_id: int, topic_id: int) -> list[BaseMessage]:
-        messages = await self.repo.list(flt={
-            "user_id": user_id,
-            "topic_id": topic_id
-        })
+        messages = await self.repo.list(flt={"user_id": user_id, "topic_id": topic_id})
         result: list[BaseMessage] = []
         for message in messages:
             if message.role == RoleEnum.ASSISTANT.value:
@@ -55,3 +56,17 @@ class ReadShortHistory:
                 msg = HumanMessage(content=message.text)
             result.append(msg)
         return result
+
+
+@attrs.frozen(kw_only=True, slots=True)
+class ReadContextHistory:
+    repo: GenericRepo[TopicEmbedModel, TopicEmbedSqlFilter]
+    tokenize: Callable[[str], Awaitable[list[float]]]
+
+    async def __call__(self, user_id: int, user_message: str) -> list[str]:
+        vector = await self.tokenize(user_message)
+        context_chunks = await self.repo.list(
+            flt={"embedding": vector},
+            limit=3
+        )
+        return [c.chunk for c in context_chunks]
