@@ -12,10 +12,11 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 
+from llms.models import *  # noqa
+from messages.models import *  # noqa
+
 from lib.models import Base
 from users.models import *  # noqa
-from messages.models import * # noqa
-from llms.models import * # noqa
 
 target_metadata = Base.metadata
 

@@ -28,6 +28,6 @@ isort = "*"
 
 [scripts]
 format = "sh -c 'isort . && ruff check --fix . && black .'"
-check = "ruff check . && mypy"
 mypy = "mypy"
+check = "sh -c 'ruff check . && mypy .'"
 main = "python main.py"

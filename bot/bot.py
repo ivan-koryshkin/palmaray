@@ -1,10 +1,9 @@
-import attrs
 import logging
 
+import attrs
+from settings import settings
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler
-from settings import settings
-
 
 
 @attrs.frozen(slots=True, frozen=True)
