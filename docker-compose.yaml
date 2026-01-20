@@ -16,6 +16,26 @@ services:
     volumes:
       - palmaray_pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+  app:
+    build:
+      context: ./docker/app
+      dockerfile: Dockerfile
+    container_name: palmaray_app
+    env_file:
+      - .env
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_SSL=${DB_SSL}
+      - TG_TOKEN=${TG_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - database
+    restart: unless-stopped
 
 volumes:
   palmaray_pgdata:

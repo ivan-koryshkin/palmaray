@@ -1,0 +1,16 @@
+# Git metadata
+.git
+
+# Virtual environments
+.venv
+venv
+
+# Environment files
+.env
+
+# Ruff cache
+.ruff_cache
+
+# Python cache
+__pycache__/
+*.py[cod]

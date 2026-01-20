@@ -19,6 +19,7 @@ openai = "*"
 langgraph = "*"
 pgvector = "*"
 langchain-openai = "*"
+cryptography = "*"
 
 [dev-packages]
 mypy = "*"

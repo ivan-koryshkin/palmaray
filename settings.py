@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     DB_SSL: bool
     TG_TOKEN: str
     OPENAI_API_KEY: str
+    SECRET_KEY: str
 
     def get_db_str(self) -> str:
         user = quote_plus(self.DB_USER)
