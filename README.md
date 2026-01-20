@@ -1,9 +1,15 @@
 # Palmaray
 
-| ![Icon](icons/icon.png) | **Palmaray**  
-  A self-hosted LLM bridge client for Telegram  
-  ![development](https://img.shields.io/badge/status-development-yellow?style=flat-square&logo=github) ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python) ![postgres](https://img.shields.io/badge/postgres-13%2B-316192?style=flat-square&logo=postgresql) ![pgvector](https://img.shields.io/badge/pgvector-enabled-brightgreen?style=flat-square) |
-| :--- | :--- |
+<p align="center">
+  <img src="icons/icon.png" width="64" alt="Icon" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/status-development-yellow?style=flat-square&logo=github" alt="development" />
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python" alt="python" />
+  <img src="https://img.shields.io/badge/postgres-13%2B-316192?style=flat-square&logo=postgresql" alt="postgres" />
+  <img src="https://img.shields.io/badge/pgvector-enabled-brightgreen?style=flat-square" alt="pgvector" />
+</p>
 
 Palmaray is a lightweight Telegram assistant that uses LLMs to generate responses, stores messages and topic embeddings in Postgres (with pgvector), and encrypts sensitive text fields at rest.
 
