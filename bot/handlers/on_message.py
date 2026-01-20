@@ -17,15 +17,17 @@ from telegram.helpers import escape_markdown
 
 from lib.database import atomic
 from lib.services import summarize_text, tokenize
+from users.services import get_user_info
 
 
 @atomic
 async def on_message(session: AsyncSession, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message_repo = new_message_repo(session)
     topic_emb_repo = new_topic_embed_repo(session)
+    user_info = await get_user_info(session, update.message.from_user.id)
 
     request_to_llm = LlmRequest(
-        llm=ChatOpenAI(model="gpt-5-nano-2025-08-07", openai_api_key=settings.OPENAI_API_KEY),
+        llm=ChatOpenAI(model=user_info["selected_model"], openai_api_key=settings.OPENAI_API_KEY),
         get_long_conversation_history=ReadContextHistory(
             repo=topic_emb_repo,
             tokenize=tokenize
