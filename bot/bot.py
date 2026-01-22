@@ -5,8 +5,6 @@ from settings import settings
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler
 
-import bot.handlers as handlers
-
 
 @attrs.frozen(slots=True, frozen=True)
 class RunBot:

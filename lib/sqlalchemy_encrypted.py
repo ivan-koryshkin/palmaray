@@ -1,8 +1,7 @@
 import base64
 import hashlib
-from typing import Any
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 from sqlalchemy.types import TypeDecorator, String
 from sqlalchemy.engine import Dialect
 
@@ -17,6 +16,7 @@ class EncryptedType(TypeDecorator):
     impl = String
 
     cache_ok = True
+
     def process_bind_param(self, value: str | bytes | None, dialect: Dialect) -> str | None:
         if value is None:
             return None
