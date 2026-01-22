@@ -11,6 +11,7 @@ class ConversationState(TypedDict):
     user_message: str
     user_id: int
     topic_id: int
+    image_url: NotRequired[str | None]
     short_history: NotRequired[List[BaseMessage]]
     long_history: NotRequired[List[dict[str, Any]]]
     messages: NotRequired[List[BaseMessage]]
@@ -22,12 +23,16 @@ class ConversationState(TypedDict):
 class LlmRequest:
     llm: ChatOpenAI
     get_short_conversation_history: Callable[[int, int], Awaitable[list[BaseMessage]]]
-    get_long_conversation_history: Callable[[int, str], Awaitable[list[str]]]
+    get_long_conversation_history: Callable[[int, str], Awaitable[list[dict[str, Any]]]]
     archive_conversation_history: Callable[[int], Awaitable[None]]
 
-    async def __call__(self, user_message: str, user_id: int, topic_id: int) -> dict[str, Any]:
+    async def __call__(
+        self, user_message: str, user_id: int, topic_id: int, image_url: str | None = None
+    ) -> dict[str, Any]:
         graph = self._create_conversation_graph()
-        result = await graph.ainvoke({"user_message": user_message, "user_id": user_id, "topic_id": topic_id})
+        result = await graph.ainvoke(
+            {"user_message": user_message, "user_id": user_id, "topic_id": topic_id, "image_url": image_url}
+        )
         await self.archive_conversation_history(topic_id)
         return result
 
@@ -39,15 +44,12 @@ class LlmRequest:
         ]
 
         for history_item in long_history:
-            summary = history_item.get("summary", "")
-            topics = ", ".join(history_item.get("topics", []))
-            preferences = ", ".join(history_item.get("preferences", []))
+            chunk = history_item.get("chunk", "")
+            image_url = history_item.get("image_url")
 
-            context_parts.append(f"- {summary}")
-            if topics:
-                context_parts.append(f"  Topics discussed: {topics}")
-            if preferences:
-                context_parts.append(f"  User preferences: {preferences}")
+            context_parts.append(f"- {chunk}")
+            if image_url:
+                context_parts.append("  (Contains image reference)")
 
         context_parts.append("\nUse this context to provide more personalized and relevant responses.")
         return "\n".join(context_parts)
@@ -73,10 +75,27 @@ class LlmRequest:
         if long_history:
             system_context = self._build_system_context(long_history)
             messages.append(SystemMessage(content=system_context))
+
+            for history_item in long_history:
+                image_url = history_item.get("image_url")
+                if image_url:
+                    content = [
+                        {"type": "text", "text": f"Context: {history_item.get('chunk', '')}"},
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                    ]
+                    messages.append(HumanMessage(content=content))
+
         short_history = state.get("short_history", [])
         messages.extend(short_history)
         user_message = state["user_message"]
-        messages.append(HumanMessage(content=user_message))
+        image_url = state.get("image_url")
+
+        if image_url:
+            content = [{"type": "text", "text": user_message}, {"type": "image_url", "image_url": {"url": image_url}}]
+        else:
+            content = user_message
+
+        messages.append(HumanMessage(content=content))
         return {**state, "messages": messages}
 
     async def _llm_node(self, state: ConversationState) -> ConversationState:
@@ -90,7 +109,7 @@ class LlmRequest:
         graph.add_node("get_long_history", self._get_long_history_node)
         graph.add_node("build_context", self._build_context_node)
         graph.add_node("llm_response", self._llm_node)
-        
+
         graph.add_edge(START, "get_short_history")
         graph.add_edge("get_short_history", "get_long_history")
         graph.add_edge("get_long_history", "build_context")

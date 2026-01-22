@@ -1,7 +1,7 @@
 import attrs
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from messages.models import MessageModel
-from messages.types import MessageSqlFilter, RoleEnum
+from messages.schemas import MessageSqlFilter, RoleEnum
 
 from lib.repo import GenericRepo
 
