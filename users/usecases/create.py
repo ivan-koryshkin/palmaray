@@ -2,7 +2,7 @@ import attrs
 
 from lib.repo import GenericRepo
 from users.models import UserModel
-from users.types import UserSqlFilters
+from users.schemas import UserSqlFilters
 
 
 @attrs.frozen(kw_only=True, slots=True)

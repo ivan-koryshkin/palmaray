@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from lib.repo import GenericRepo
 from users.models import UserModel
-from users.types import UserSqlFilters
+from users.schemas import UserSqlFilters
 
 
 def build_user_where(model: UserModel, flt: UserSqlFilters | None) -> ColumnElement[bool]:

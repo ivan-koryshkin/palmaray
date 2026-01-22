@@ -1,6 +1,6 @@
 import attrs
 from messages.models import TopicModel
-from messages.types import TopicSqlFilter
+from messages.schemas import TopicSqlFilter
 
 from lib.repo import GenericRepo
 

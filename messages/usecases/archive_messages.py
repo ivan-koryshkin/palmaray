@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import attrs
 from messages.models import MessageModel, TopicEmbedModel
-from messages.types import MessageSqlFilter, TopicEmbedSqlFilter
+from messages.schemas import MessageSqlFilter, TopicEmbedSqlFilter
 from messages.usecases.protocols import ISummarize, ITokenize
 
 from lib.repo import GenericRepo
@@ -58,7 +58,8 @@ class ArchiveMessages:
             text = "\n".join(texts)
             summarized = await self.summarize(text)
             embedding = await self.tokenize(summarized)
-            return TopicEmbedModel(topic_id=topic_id, chunk=summarized, embedding=embedding)
+            image_url = next((m.image_url for m in group_msgs if m.image_url), None)
+            return TopicEmbedModel(topic_id=topic_id, chunk=summarized, embedding=embedding, image_url=image_url)
 
         tasks = [process_group(g) for g in groups if g]
         topic_embedings = await asyncio.gather(*tasks) if tasks else []
