@@ -23,6 +23,7 @@ class MessageModel(Base):
     role: Mapped[str] = mapped_column(String, nullable=False)
     tokenized: Mapped[str] = mapped_column(Boolean, nullable=False, default=False)
     topic_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("topics.id"))
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     def to_dict(self) -> dict[str, str]:
         return {"role": self.role, "message": self.text}
@@ -38,3 +39,4 @@ class TopicEmbedModel(Base):
     topic_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("topics.id"), nullable=False)
     chunk: Mapped[str] = mapped_column(EncryptedType(), nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)

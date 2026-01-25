@@ -1,7 +1,7 @@
 from typing import Tuple, Union
 
 from messages.models import TopicEmbedModel
-from messages.types import TopicEmbedSqlFilter
+from messages.schemas import TopicEmbedSqlFilter
 from sqlalchemy import ColumnElement, and_, bindparam, true
 from sqlalchemy.ext.asyncio import AsyncSession
 

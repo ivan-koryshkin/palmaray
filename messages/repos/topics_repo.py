@@ -1,5 +1,5 @@
 from messages.models import TopicModel
-from messages.types import TopicSqlFilter
+from messages.schemas import TopicSqlFilter
 from sqlalchemy import ColumnElement, and_, true
 from sqlalchemy.ext.asyncio import AsyncSession
 

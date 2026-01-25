@@ -1,7 +1,7 @@
 from typing import Callable, Protocol
 
 from messages.models import MessageModel, TopicModel
-from messages.types import MessageSqlFilter, RoleEnum, TopicSqlFilter
+from messages.schemas import MessageSqlFilter, RoleEnum, TopicSqlFilter
 
 from lib.repo import GenericRepo
 

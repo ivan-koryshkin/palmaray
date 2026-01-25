@@ -9,7 +9,7 @@ from .on_info import on_info
 from telegram.ext import CallbackQueryHandler
 
 
-on_message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, on_message)
+on_message_handler = MessageHandler((filters.TEXT | filters.PHOTO) & ~filters.COMMAND, on_message)
 on_start_handler = CommandHandler("start", start)
 on_new_thread_handler = CommandHandler("thread", on_new_thread)
 on_llm_list_handler = CommandHandler("llm_list", on_llm_list)

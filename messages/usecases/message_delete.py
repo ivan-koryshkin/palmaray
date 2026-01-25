@@ -1,6 +1,6 @@
 import attrs
 from messages.models import MessageModel
-from messages.types import MessageSqlFilter
+from messages.schemas import MessageSqlFilter
 
 from lib.repo import GenericRepo
 

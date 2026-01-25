@@ -25,11 +25,13 @@ async def summarize_text(text: str) -> str:
     response = client.invoke([message])
     return response.content
 
+
 async def encrypt(text: str) -> str:
     key = base64.urlsafe_b64encode(hashlib.sha256(settings.SECRET_KEY.encode()).digest())
     f = Fernet(key)
     token = f.encrypt(text.encode())
     return token.decode()
+
 
 async def decrypt(text: str) -> str:
     key = base64.urlsafe_b64encode(hashlib.sha256(settings.SECRET_KEY.encode()).digest())

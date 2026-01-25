@@ -1,8 +1,4 @@
-import asyncio
-
-
 from llms.repos.llm_repo import new_llm_repo
-from settings import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import Update
 from telegram.constants import ParseMode
@@ -18,13 +14,12 @@ async def on_llm_list(session: AsyncSession, update: Update, context: ContextTyp
     repo_llm = new_llm_repo(session)
     llms = await repo_llm.list()
     if not llms:
-        await update.message.reply_text(f"_{escape_markdown('No models available', version=2)}_", parse_mode=ParseMode.MARKDOWN_V2)
+        await update.message.reply_text(
+            f"_{escape_markdown('No models available', version=2)}_", parse_mode=ParseMode.MARKDOWN_V2
+        )
         return
 
-    keyboard = [
-        [InlineKeyboardButton(text=llm.name, callback_data=f"/llmset {llm.id}")]
-        for llm in llms
-    ]
+    keyboard = [[InlineKeyboardButton(text=llm.name, callback_data=f"/llmset {llm.id}")] for llm in llms]
     markup = InlineKeyboardMarkup(keyboard)
 
     header = f"*{escape_markdown('Available models:', version=2)}*"

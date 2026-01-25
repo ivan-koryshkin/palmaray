@@ -5,6 +5,7 @@ from lib.database import atomic
 from users.services import set_user_selected_model
 from llms.services import is_model_active
 
+
 @atomic
 async def on_callback_query(session, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # todo: refactor this
@@ -13,9 +14,9 @@ async def on_callback_query(session, update: Update, context: ContextTypes.DEFAU
         return
 
     data = cq.data.strip()
-    if data.startswith('/llmset'):
+    if data.startswith("/llmset"):
         parts = data.split(maxsplit=1)
-        arg = parts[1] if len(parts) > 1 else ''
+        arg = parts[1] if len(parts) > 1 else ""
         await cq.answer(text=f"Selected: {arg}", show_alert=False)
         if cq.message:
             ok = await is_model_active(session, arg)

@@ -1,4 +1,3 @@
-from settings import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import Update
 from telegram.constants import ParseMode
@@ -15,12 +14,12 @@ async def on_info(session: AsyncSession, update: Update, context: ContextTypes.D
     user_id = update.message.from_user.id
     user_info = await get_user_info(session, user_id)
 
-    uid = escape_markdown(str(user_info.get('id', '')), version=2)
-    name = escape_markdown(user_info.get('name', '') or '—', version=2)
-    selected = escape_markdown(user_info.get('selected_model') or '—', version=2)
+    uid = escape_markdown(str(user_info.get("id", "")), version=2)
+    name = escape_markdown(user_info.get("name", "") or "—", version=2)
+    selected = escape_markdown(user_info.get("selected_model") or "—", version=2)
 
     parts = [
-        f"*User info*",
+        "*User info*",
         f"*ID*: `{uid}`",
         f"*Name*: {name}",
         f"*Selected model*: `{selected}`",
