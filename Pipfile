@@ -20,6 +20,8 @@ langgraph = "*"
 pgvector = "*"
 langchain-openai = "*"
 cryptography = "*"
+taskiq = "*"
+taskiq-redis = "*"
 
 [dev-packages]
 mypy = "*"
@@ -32,3 +34,4 @@ format = "sh -c 'isort . && ruff check --fix . && black .'"
 mypy = "mypy"
 check = "sh -c 'ruff check . && mypy .'"
 main = "python main.py"
+broker = "python -m broker"

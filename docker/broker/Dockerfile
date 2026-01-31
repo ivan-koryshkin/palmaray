@@ -11,6 +11,5 @@ COPY Pipfile Pipfile.lock* /app/
 ENV PIPENV_NOSPIN=1
 RUN pipenv install --deploy --system || pipenv install --system --skip-lock
 COPY . /app
-COPY docker/app/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-ENTRYPOINT ["/app/entrypoint.sh"]
+
+CMD ["python", "-m", "broker"]
