@@ -1,13 +1,15 @@
 import logging
 
-from aiogram import Bot
+from telegram import Bot
 from langchain_openai import ChatOpenAI
 from broker import broker
 from lib.database import atomic
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from typing import List
+from broker.tasks.results import ChatMessage
+
 from lib.services import summarize_text, tokenize
-from sqlalchemy.ext.asyncio import AsyncSession
 from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
 
@@ -31,8 +33,8 @@ async def _response_to_user(
     topic_id: int,
     user_message_text: str,
     user_message_id: str,
-    image_url: str | None = None
-) -> None:
+    image_url: str | None = None,
+) -> List[ChatMessage]:
     logger = logging.getLogger(__name__)
     bot = Bot(token=settings.TG_TOKEN)
     logger.info("response_to_user: sending to chat_id=%s token present=%s", chat_id, bool(settings.TG_TOKEN))
@@ -74,25 +76,31 @@ async def _response_to_user(
         (user_message_id, RoleEnum.USER, user_message_text, image_url),
         (thinking_message.id, RoleEnum.ASSISTANT, assistant_response, None),
     ]
+
+    result: List[ChatMessage] = []
     for msg_id, role, text, img_url in messages:
-        await create_message_history(
-            message_id=msg_id,
-            chat_id=user_message_id,
-            text=text,
-            user_id=user_id,
-            topic_id=topic_id,
-            role=role,
-            image_url=img_url,
-        )
+        img = img_url or ""
+        chat_msg: ChatMessage = {
+            "id": int(msg_id),
+            "chat_id": int(chat_id),
+            "role": role.value if hasattr(role, "value") else str(role),
+            "text": text or "",
+            "image_url": img,
+            "topic_id": int(topic_id) if topic_id is not None else 0,
+            "user_id": int(user_id),
+        }
+        result.append(chat_msg)
+
+    return result
 
 
 @broker.task
-async def response_to_user(
+async def task_response_to_user(
     user_id: int,
     chat_id: int,
     topic_id: int,
     user_message_text: str,
     user_message_id: str,
-    image_url: str | None = None
-) -> None:
-    await _response_to_user(user_id, chat_id, topic_id, user_message_text, user_message_id, image_url)
+    image_url: str | None = None,
+) -> List[ChatMessage]:
+    return await _response_to_user(user_id, chat_id, topic_id, user_message_text, user_message_id, image_url)

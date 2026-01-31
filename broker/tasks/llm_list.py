@@ -47,5 +47,5 @@ async def _send_llm_list(session: AsyncSession, chat_id: int, topic_id: int) -> 
 
 
 @broker.task
-async def send_llm_list(chat_id: int, topic_id: int) -> None:
+async def task_send_llm_list(chat_id: int, topic_id: int) -> None:
     await _send_llm_list(chat_id, topic_id)
