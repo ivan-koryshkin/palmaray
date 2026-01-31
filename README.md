@@ -47,6 +47,7 @@ Environment variables (.env)
 - `TG_TOKEN`
 - `OPENAI_API_KEY`
 - `SECRET_KEY`
+- `REDIS_URL`
 
 Local development
 1. Create and activate the virtualenv with pipenv:
@@ -79,16 +80,12 @@ pipenv run main
 Docker / Production
 - A Docker image for Postgres with `pgvector` is provided under `docker/postgres`; `docker-compose.yaml` defines `database` and `app` services.
 
+- A Docker image for Postgres with `pgvector` is provided under `docker/postgres`; `docker-compose.yaml` defines `database`, `app`, `broker`, and `redis` services.
+
 Build and run with:
 
 ```bash
-docker compose up --build -d database app
-```
-
-After the database comes up, run migrations from the host (or via the app container):
-
-```bash
-pipenv run alembic upgrade head
+docker compose up --build -d
 ```
 
 Notes and gotchas
@@ -99,6 +96,3 @@ Notes and gotchas
 
 Support
 - For quick tests use the `/llm_list` command to list LLMs and pick a model.
-
-License & Attribution
-- (Add license and attribution as needed)
