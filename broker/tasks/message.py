@@ -16,8 +16,7 @@ from telegram.helpers import escape_markdown
 from llms.usecases.request import LlmRequest
 from messages.repos.messages_repo import new_message_repo
 from messages.repos.topic_embed_repo import new_topic_embed_repo
-from messages.schemas import RoleEnum
-from messages.services.messages import create_message_history
+from messages.schemas import RoleEnumi
 from messages.usecases.archive_messages import ArchiveMessages
 from messages.usecases.message_history import ReadContextHistory, ReadShortHistory
 from settings import settings
@@ -41,7 +40,7 @@ async def _response_to_user(
         thinking_message = await bot.send_message(
             chat_id=chat_id,
             message_thread_id=topic_id,
-            text=f"Thinking",
+            text="Thinking",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
     except Exception as exc:
