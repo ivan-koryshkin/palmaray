@@ -14,10 +14,10 @@ class SaveMessage:
 
     async def __call__(
         self, *, message_id: int, chat_id: int, text: str, topic_id: int, role: RoleEnum, image_url: str | None = None
-    ) -> int:
+    ) -> int | None:
         msg = await self.repo.read(message_id)
         if msg is not None:
-            return
+            return None
 
         encrypted = self.encrypt_message(text)
 

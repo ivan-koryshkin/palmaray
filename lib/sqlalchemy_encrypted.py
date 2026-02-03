@@ -22,7 +22,10 @@ class EncryptedType(TypeDecorator):
             return None
         if not isinstance(value, (str, bytes)):
             value = str(value)
-        token = _FERNET.encrypt(value.encode())
+        if isinstance(value, str):
+            token = _FERNET.encrypt(value.encode())
+        else:
+            token = _FERNET.encrypt(value)
         return token.decode()
 
     def process_result_value(self, value: str | None, dialect: Dialect) -> str | None:

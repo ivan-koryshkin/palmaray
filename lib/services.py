@@ -19,11 +19,11 @@ async def summarize_text(text: str) -> str:
     Remove filler words, keep only essential factual content. 
     Respond in the same language as input:\n\n{text}"
     """
-    client = ChatOpenAI(model="gpt-5-mini", openai_api_key=settings.OPENAI_API_KEY)
+    client = ChatOpenAI(model="gpt-4o-mini")
 
     message = HumanMessage(content=prompt)
     response = client.invoke([message])
-    return response.content
+    return str(response.content)
 
 
 async def encrypt(text: str) -> str:

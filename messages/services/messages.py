@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from messages.models import MessageModel
 from messages.repos.messages_repo import new_message_repo
 from messages.repos.topics_repo import new_topic_repo
-from messages.schemas import RoleEnum
+from messages.schemas import MessageSqlFilter, RoleEnum
 from messages.usecases.message_delete import DeleteOldMessage
 from messages.usecases.message_history import CreateMessageHistory
 from messages.usecases.message_save import SaveMessage
@@ -19,11 +19,11 @@ async def create_message_history(
     message_id: int,
     chat_id: int,
     text: str,
-    user_id: str,
+    user_id: int,
     topic_id: int | None = None,
     role: RoleEnum = RoleEnum.USER,
     image_url: str | None = None,
-) -> bool:
+) -> int | None:
     message_repo = new_message_repo(session)
     topic_repo = new_topic_repo(session)
     create_history = CreateMessageHistory(
@@ -37,6 +37,9 @@ async def create_message_history(
 @atomic
 async def get_old_messages(session: AsyncSession) -> list[MessageModel]:
     message_repo = new_message_repo(session)
+    date_from = (datetime.now() - timedelta(days=3)).date()
     return await message_repo.list(
-        flt={"date_from": datetime.date(timedelta(days=3)), "date_to": datetime.now().date()}
+        flt=MessageSqlFilter(
+            user_id=0, topic_id=None, tokenized=None, date_from=date_from, date_to=datetime.now().date(), role=None
+        )
     )

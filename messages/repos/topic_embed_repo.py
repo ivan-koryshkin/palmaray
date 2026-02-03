@@ -11,9 +11,13 @@ from lib.repo import GenericRepo
 def build_topic_embed_where(
     model: TopicEmbedModel, flt: TopicEmbedSqlFilter | None
 ) -> Union[ColumnElement[bool], Tuple[ColumnElement[bool], ColumnElement[float]]]:
+    if flt is None:
+        return true()
+
     conds: list[ColumnElement[bool]] = []
     distance_expr = None
-    for k, v in (flt or {}).items():
+    filter_dict = flt if isinstance(flt, dict) else {}
+    for k, v in filter_dict.items():
         if v is None:
             continue
         if k == "embedding":
@@ -30,6 +34,6 @@ def build_topic_embed_where(
 def new_topic_embed_repo(session: AsyncSession) -> GenericRepo[TopicEmbedModel, TopicEmbedSqlFilter]:
     return GenericRepo(
         model=TopicEmbedModel,
-        build_filter=build_topic_embed_where,
+        build_filter=build_topic_embed_where,  # type: ignore[arg-type]
         session=session,
     )

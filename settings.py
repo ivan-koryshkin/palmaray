@@ -32,4 +32,4 @@ class Settings(BaseSettings):
         return {"ssl": False}
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]

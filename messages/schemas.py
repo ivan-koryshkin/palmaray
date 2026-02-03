@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date
 from enum import StrEnum
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class TopicSqlFilter(TypedDict):
@@ -13,9 +13,9 @@ class MessageSqlFilter(TypedDict):
     user_id: int
     topic_id: int | None
     tokenized: bool | None
-    date_from: datetime.date | None
-    date_to: datetime.date | None
-    role: str | None = None
+    date_from: date | None
+    date_to: date | None
+    role: NotRequired[str | None]
 
 
 class TopicEmbedSqlFilter(TypedDict, total=False):

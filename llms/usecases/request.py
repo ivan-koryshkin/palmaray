@@ -6,6 +6,8 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
+MessageContent = str | list[str | dict[Any, Any]]
+
 
 class ConversationState(TypedDict):
     user_message: str
@@ -70,7 +72,7 @@ class LlmRequest:
         return {**state, "long_history": long_history}
 
     async def _build_context_node(self, state: ConversationState) -> ConversationState:
-        messages = []
+        messages: list[BaseMessage] = []
         long_history = state.get("long_history", [])
         if long_history:
             system_context = self._build_system_context(long_history)
@@ -79,7 +81,7 @@ class LlmRequest:
             for history_item in long_history:
                 image_url = history_item.get("image_url")
                 if image_url:
-                    content = [
+                    content: MessageContent = [
                         {"type": "text", "text": f"Context: {history_item.get('chunk', '')}"},
                         {"type": "image_url", "image_url": {"url": image_url}},
                     ]
@@ -91,19 +93,24 @@ class LlmRequest:
         image_url = state.get("image_url")
 
         if image_url:
-            content = [{"type": "text", "text": user_message}, {"type": "image_url", "image_url": {"url": image_url}}]
+            content_msg: MessageContent = [
+                {"type": "text", "text": user_message},
+                {"type": "image_url", "image_url": {"url": image_url}},
+            ]
         else:
-            content = user_message
+            content_msg = user_message
 
-        messages.append(HumanMessage(content=content))
+        messages.append(HumanMessage(content=content_msg))
         return {**state, "messages": messages}
 
     async def _llm_node(self, state: ConversationState) -> ConversationState:
         messages = state["messages"]
         response = await self.llm.ainvoke(messages)
-        return {**state, "response": response.content, "message_count": len(messages)}
+        content = response.content
+        response_str = content if isinstance(content, str) else str(content)
+        return {**state, "response": response_str, "message_count": len(messages)}
 
-    def _create_conversation_graph(self) -> StateGraph:
+    def _create_conversation_graph(self) -> Any:
         graph = StateGraph(ConversationState)
         graph.add_node("get_short_history", self._get_short_history_node)
         graph.add_node("get_long_history", self._get_long_history_node)

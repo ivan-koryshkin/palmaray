@@ -11,9 +11,9 @@ from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncEngine,
     AsyncSession,
+    async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import sessionmaker
 
 from users.models import *  # noqa: F403
 
@@ -35,7 +35,7 @@ async def get_connection(engine: AsyncEngine) -> AsyncGenerator[AsyncConnection,
 
 @asynccontextmanager
 async def get_session(engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
-    AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+    AsyncSessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
     async with AsyncSessionLocal() as session:
         async with session.begin():

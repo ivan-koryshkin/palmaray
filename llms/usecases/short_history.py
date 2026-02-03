@@ -12,10 +12,15 @@ class ReadShortHistory:
 
     async def __call__(self, user_id: int, topic_id: int) -> list[BaseMessage]:
         messages = await self.repo.list(
-            flt={"user_id": user_id, "topic_id": topic_id, "limit": 5, "order_by": "created_at"}
+            flt=MessageSqlFilter(
+                user_id=user_id, topic_id=topic_id, tokenized=None, date_from=None, date_to=None, role=None
+            ),
+            limit=5,
+            order_by="created_at",
         )
         result: list[BaseMessage] = []
         for message in messages:
+            msg: BaseMessage
             if message.role == RoleEnum.USER.name:
                 msg = AIMessage(content=message.text)
             else:

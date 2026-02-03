@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+from typing import Sequence
 
 import attrs
 from messages.models import MessageModel, TopicEmbedModel
@@ -19,13 +20,16 @@ class ArchiveMessages:
     arhive_days: int = 3
 
     async def __call__(self, topic_id: int) -> None:
+        date_from = (datetime.now() - timedelta(days=self.arhive_days)).date()
         messages = await self.repo_msg.list(
-            flt={
-                "date_from": timedelta(days=self.arhive_days),
-                "date_to": datetime.now().date,
-                "topic_id": topic_id,
-                "tokenized": False,
-            }
+            flt=MessageSqlFilter(
+                user_id=0,
+                topic_id=topic_id,
+                tokenized=False,
+                date_from=date_from,
+                date_to=datetime.now().date(),
+                role=None,
+            )
         )
         if len(messages) < 3:
             return
@@ -63,7 +67,7 @@ class ArchiveMessages:
 
         tasks = [process_group(g) for g in groups if g]
         topic_embedings = await asyncio.gather(*tasks) if tasks else []
-        delete_ids: list[int] = [m.id for g in groups for m in g]
+        delete_ids: list[int | str] = [m.id for g in groups for m in g]
 
         await asyncio.gather(
             self.repo_topic_embed.create_bulk(topic_embedings) if topic_embedings else asyncio.sleep(0),

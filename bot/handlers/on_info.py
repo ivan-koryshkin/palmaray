@@ -11,6 +11,9 @@ from users.services import get_user_info
 
 @atomic
 async def on_info(session: AsyncSession, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.message.from_user:
+        return
+
     user_id = update.message.from_user.id
     user_info = await get_user_info(session, user_id)
 

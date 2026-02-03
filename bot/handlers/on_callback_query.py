@@ -18,7 +18,9 @@ async def on_callback_query(session, update: Update, context: ContextTypes.DEFAU
         parts = data.split(maxsplit=1)
         arg = parts[1] if len(parts) > 1 else ""
         await cq.answer(text=f"Selected: {arg}", show_alert=False)
-        if cq.message:
+        if cq.message and hasattr(cq.message, "reply_text"):
+            if not update.effective_chat:
+                return
             ok = await is_model_active(session, arg)
             if ok:
                 await set_user_selected_model(session, update.effective_chat.id, arg)

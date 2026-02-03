@@ -36,9 +36,9 @@ async def _send_llm_list(session: AsyncSession, chat_id: int, topic_id: int) -> 
     try:
         logger.info(f"{settings.TG_TOKEN}")
         await bot.send_message(
-            chat_id=chat_id, 
-            text=header, 
-            parse_mode=ParseMode.MARKDOWN_V2, 
+            chat_id=chat_id,
+            text=header,
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=markup,
             message_thread_id=topic_id,
         )

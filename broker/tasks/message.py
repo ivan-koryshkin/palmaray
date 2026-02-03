@@ -24,7 +24,6 @@ from settings import settings
 from users.services.users import get_user_info
 
 
-
 @atomic
 async def _response_to_user(
     session: AsyncSession,
@@ -47,13 +46,13 @@ async def _response_to_user(
         )
     except Exception as exc:
         logger.exception("response_to_user: failed to send thinking message to %s: %s", chat_id, exc)
-        return
+        return []
     message_repo = new_message_repo(session)
     topic_emb_repo = new_topic_embed_repo(session)
     user_info = await get_user_info(session, user_id)
 
     request_to_llm = LlmRequest(
-        llm=ChatOpenAI(model=user_info["selected_model"], openai_api_key=settings.OPENAI_API_KEY),
+        llm=ChatOpenAI(model=user_info["selected_model"]),
         get_long_conversation_history=ReadContextHistory(repo=topic_emb_repo, tokenize=tokenize),
         get_short_conversation_history=ReadShortHistory(repo=message_repo),
         archive_conversation_history=ArchiveMessages(
@@ -81,7 +80,7 @@ async def _response_to_user(
     for msg_id, role, text, img_url in messages:
         img = img_url or ""
         chat_msg: ChatMessage = {
-            "id": int(msg_id),
+            "id": int(str(msg_id)),
             "chat_id": int(chat_id),
             "role": role.value if hasattr(role, "value") else str(role),
             "text": text or "",

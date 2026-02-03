@@ -45,7 +45,7 @@ class GenericRepo(Generic[TModel, TFilter]):
         obj = await self.session.get(self.model, id)
         if obj is None:
             return False
-        self.session.delete(obj)
+        await self.session.delete(obj)
         await self.session.flush()
         return True
 
@@ -54,11 +54,12 @@ class GenericRepo(Generic[TModel, TFilter]):
             return False
         stmt = delete(self.model).where(getattr(self.model, "id").in_(ids))
         result = await self.session.execute(stmt)
-        return bool(result.rowcount)
+        return bool(result.rowcount) if hasattr(result, "rowcount") else True
 
     async def count(self, flt: TFilter | None = None) -> int:
         stmt = select(func.count()).select_from(self.model)
-        for k, v in (flt or {}).items():
+        filter_dict = flt if isinstance(flt, dict) else {}
+        for k, v in filter_dict.items():
             if hasattr(self.model, k):
                 stmt = stmt.where(getattr(self.model, k) == v)
         result = await self.session.execute(stmt)
@@ -71,7 +72,8 @@ class GenericRepo(Generic[TModel, TFilter]):
         order_by: str | None = None,
     ) -> list[TModel]:
         stmt = select(self.model)
-        for k, v in (flt or {}).items():
+        filter_dict = flt if isinstance(flt, dict) else {}
+        for k, v in filter_dict.items():
             if hasattr(self.model, k):
                 stmt = stmt.where(getattr(self.model, k) == v)
         if order_by is not None and hasattr(self.model, order_by):
@@ -79,4 +81,4 @@ class GenericRepo(Generic[TModel, TFilter]):
         if limit is not None:
             stmt = stmt.limit(limit)
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        return list(result.scalars().all())

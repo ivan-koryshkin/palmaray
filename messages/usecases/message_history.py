@@ -1,13 +1,13 @@
-import attrs
 import asyncio
-from typing import Any
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from typing import Any, Awaitable, Callable
+
+import attrs
+from langchain_core.messages import BaseMessage
 from messages.models import MessageModel, TopicEmbedModel
 from messages.schemas import MessageSqlFilter, RoleEnum, TopicEmbedSqlFilter
-from collections.abc import Callable, Awaitable
-from lib.repo import GenericRepo
+from messages.usecases.protocols import IDeleteMessages, IMessageSave, ITopicSave
 
-from .protocols import IDeleteMessages, IMessageSave, ITopicSave
+from lib.repo import GenericRepo
 
 
 @attrs.frozen(kw_only=True, slots=True)
@@ -26,11 +26,13 @@ class CreateMessageHistory:
         role: RoleEnum = RoleEnum.USER,
         image_url: str | None = None,
     ) -> int:
+        assert topic_id
         topic_id = await self.save_topic(
             id=topic_id,
             name=f"default topic {topic_id}",
             user_id=user_id,
         )
+
         save_task = self.save_message(
             message_id=message_id,
             chat_id=chat_id,
@@ -42,7 +44,7 @@ class CreateMessageHistory:
         delete_task = self.delete_old_messages(topic_id, 15)
 
         saved, _ = await asyncio.gather(save_task, delete_task)
-        return saved
+        return topic_id
 
 
 @attrs.frozen(kw_only=True, slots=True)
@@ -50,14 +52,27 @@ class ReadShortHistory:
     repo: GenericRepo[MessageModel, MessageSqlFilter]
 
     async def __call__(self, user_id: int, topic_id: int) -> list[BaseMessage]:
-        messages = await self.repo.list(flt={"user_id": user_id, "topic_id": topic_id})
+        messages = await self.repo.list(
+            flt=MessageSqlFilter(
+                user_id=user_id, topic_id=topic_id, tokenized=None, date_from=None, date_to=None, role=None
+            )
+        )
+
         result: list[BaseMessage] = []
-        for message in messages:
-            if message.role == RoleEnum.ASSISTANT.value:
-                msg = AIMessage(content=message.text)
-            else:
-                msg = HumanMessage(content=message.text)
-            result.append(msg)
+        for msg in messages:
+            msg_dict = msg.to_dict()
+            role = msg_dict.get("role", "")
+            message_text = msg_dict.get("message", "")
+
+            if role == "user":
+                from langchain_core.messages import HumanMessage
+
+                result.append(HumanMessage(content=message_text))
+            elif role == "assistant":
+                from langchain_core.messages import AIMessage
+
+                result.append(AIMessage(content=message_text))
+
         return result
 
 

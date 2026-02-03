@@ -1,4 +1,4 @@
-from typing import Callable, Protocol
+from typing import Callable, Protocol, runtime_checkable
 
 from messages.models import MessageModel, TopicModel
 from messages.schemas import MessageSqlFilter, RoleEnum, TopicSqlFilter
@@ -6,41 +6,38 @@ from messages.schemas import MessageSqlFilter, RoleEnum, TopicSqlFilter
 from lib.repo import GenericRepo
 
 
+@runtime_checkable
 class ITopicSave(Protocol):
-    repo: GenericRepo[TopicModel, TopicSqlFilter]
-
     async def __call__(self, id: int, name: str, user_id: int) -> int: ...
 
 
+@runtime_checkable
 class IMessageSave(Protocol):
-    repo: GenericRepo[MessageModel, MessageSqlFilter]
-    encrypt_message: Callable[[str], str]
-
     async def __call__(
-        self, *, message_id: int, chat_id: int, text: str, topic_id: int, role: RoleEnum
+        self, *, message_id: int, chat_id: int, text: str, topic_id: int, role: RoleEnum, image_url: str | None = None
     ) -> int | None: ...
 
 
-class IDeleteMessages:
-    max_count: int
-    repo: GenericRepo[MessageModel, MessageSqlFilter]
-
+@runtime_checkable
+class IDeleteMessages(Protocol):
     async def __call__(self, topic_id: int, count: int) -> bool: ...
 
 
+@runtime_checkable
 class ITokenizeMessages(Protocol):
     async def __call__(self, message_ids: list[int]) -> bool: ...
 
 
-class IReadShortHistory:
-    repo: GenericRepo[MessageModel, MessageSqlFilter]
-
+@runtime_checkable
+class IReadShortHistory(Protocol):
     async def __call__(self, user_id: int, topic_id: int) -> list[MessageModel]: ...
 
 
+@runtime_checkable
 class ITokenize(Protocol):
-    async def __call__(self, text: str) -> str: ...
+    async def __call__(self, text: str) -> list[float]: ...
 
 
+@runtime_checkable
 class ISummarize(Protocol):
     async def __call__(self, text: str) -> str: ...

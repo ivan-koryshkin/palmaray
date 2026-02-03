@@ -7,15 +7,18 @@ from lib.repo import GenericRepo
 
 
 def build_message_where(model: MessageModel, flt: MessageSqlFilter | None) -> ColumnElement[bool]:
+    if flt is None:
+        return true()
+
     conds: list[ColumnElement[bool]] = []
-    if flt["topic_id"] is not None:
+    if flt.get("topic_id") is not None:
         conds.append(MessageModel.topic_id == flt["topic_id"])
-    if flt["tokenized"] is not None:
+    if flt.get("tokenized") is not None:
         conds.append(MessageModel.tokenized.is_(flt["tokenized"]))
-    if flt["role"] is not None:
+    if flt.get("role") is not None:
         conds.append(MessageModel.role == flt["role"])
     return and_(*conds) if conds else true()
 
 
 def new_message_repo(session: AsyncSession) -> GenericRepo[MessageModel, MessageSqlFilter]:
-    return GenericRepo(model=MessageModel, build_filter=build_message_where, session=session)
+    return GenericRepo(model=MessageModel, build_filter=build_message_where, session=session)  # type: ignore[arg-type]
