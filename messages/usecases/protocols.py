@@ -1,9 +1,7 @@
-from typing import Callable, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-from messages.models import MessageModel, TopicModel
-from messages.schemas import MessageSqlFilter, RoleEnum, TopicSqlFilter
-
-from lib.repo import GenericRepo
+from messages.models import MessageModel
+from messages.schemas import RoleEnum
 
 
 @runtime_checkable

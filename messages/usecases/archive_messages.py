@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Sequence
 
 import attrs
 from messages.models import MessageModel, TopicEmbedModel
