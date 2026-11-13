@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     SECRET_KEY: str
     REDIS_URL: str
+    WORKSPACE_DIR: str = "/tmp/palmaray"
 
     def get_db_str(self) -> str:
         user = quote_plus(self.DB_USER)
