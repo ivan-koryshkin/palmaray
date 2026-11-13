@@ -10,9 +10,9 @@ class SaveTopic:
     repo: GenericRepo[TopicModel, TopicSqlFilter]
 
     async def __call__(self, id: int, name: str, user_id: int) -> int:
-        topic = await self.repo.read(id)
-        if topic is not None:
-            return topic.id
+        existing = await self.repo.list(flt=TopicSqlFilter(id=id, user_id=user_id), limit=1)
+        if existing:
+            return existing[0].id
 
         topic = await self.repo.create(TopicModel(id=id, name=name, user_id=user_id))
         return topic.id

@@ -1,6 +1,6 @@
 from typing import Protocol, runtime_checkable
 
-from messages.models import MessageModel
+from messages.models import MessageModel, TopicEmbedModel
 from messages.schemas import RoleEnum
 
 
@@ -12,13 +12,21 @@ class ITopicSave(Protocol):
 @runtime_checkable
 class IMessageSave(Protocol):
     async def __call__(
-        self, *, message_id: int, chat_id: int, text: str, topic_id: int, role: RoleEnum, image_url: str | None = None
+        self,
+        *,
+        message_id: int,
+        chat_id: int,
+        text: str,
+        topic_id: int,
+        role: RoleEnum,
+        user_id: int,
+        image_url: str | None = None,
     ) -> int | None: ...
 
 
 @runtime_checkable
 class IDeleteMessages(Protocol):
-    async def __call__(self, topic_id: int, count: int) -> bool: ...
+    async def __call__(self, user_id: int, topic_id: int, count: int) -> bool: ...
 
 
 @runtime_checkable
@@ -34,6 +42,11 @@ class IReadShortHistory(Protocol):
 @runtime_checkable
 class ITokenize(Protocol):
     async def __call__(self, text: str) -> list[float]: ...
+
+
+@runtime_checkable
+class ISearchTopicEmbeds(Protocol):
+    async def __call__(self, *, user_id: int, embedding: list[float], limit: int) -> list[TopicEmbedModel]: ...
 
 
 @runtime_checkable

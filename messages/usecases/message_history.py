@@ -3,9 +3,9 @@ from typing import Any, Awaitable, Callable
 
 import attrs
 from langchain_core.messages import BaseMessage
-from messages.models import MessageModel, TopicEmbedModel
-from messages.schemas import MessageSqlFilter, RoleEnum, TopicEmbedSqlFilter
-from messages.usecases.protocols import IDeleteMessages, IMessageSave, ITopicSave
+from messages.models import MessageModel
+from messages.schemas import MessageSqlFilter, RoleEnum
+from messages.usecases.protocols import IDeleteMessages, IMessageSave, ISearchTopicEmbeds, ITopicSave
 
 from lib.repo import GenericRepo
 
@@ -39,9 +39,10 @@ class CreateMessageHistory:
             text=text,
             topic_id=topic_id,
             role=role,
+            user_id=user_id,
             image_url=image_url,
         )
-        delete_task = self.delete_old_messages(topic_id, 15)
+        delete_task = self.delete_old_messages(user_id, topic_id, 15)
 
         saved, _ = await asyncio.gather(save_task, delete_task)
         return topic_id
@@ -50,13 +51,18 @@ class CreateMessageHistory:
 @attrs.frozen(kw_only=True, slots=True)
 class ReadShortHistory:
     repo: GenericRepo[MessageModel, MessageSqlFilter]
+    limit: int = 20
 
     async def __call__(self, user_id: int, topic_id: int) -> list[BaseMessage]:
-        messages = await self.repo.list(
+        # newest N messages of this user in this topic, returned oldest first
+        newest = await self.repo.list(
             flt=MessageSqlFilter(
                 user_id=user_id, topic_id=topic_id, tokenized=None, date_from=None, date_to=None, role=None
-            )
+            ),
+            limit=self.limit,
+            order_by="-created_at",
         )
+        messages = list(reversed(newest))
 
         result: list[BaseMessage] = []
         for msg in messages:
@@ -78,10 +84,10 @@ class ReadShortHistory:
 
 @attrs.frozen(kw_only=True, slots=True)
 class ReadContextHistory:
-    repo: GenericRepo[TopicEmbedModel, TopicEmbedSqlFilter]
+    search: ISearchTopicEmbeds
     tokenize: Callable[[str], Awaitable[list[float]]]
 
     async def __call__(self, user_id: int, user_message: str) -> list[dict[str, Any]]:
         vector = await self.tokenize(user_message)
-        context_chunks = await self.repo.list(flt={"embedding": vector}, limit=3)
+        context_chunks = await self.search(user_id=user_id, embedding=vector, limit=3)
         return [{"chunk": c.chunk, "image_url": c.image_url} for c in context_chunks]

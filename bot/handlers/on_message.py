@@ -1,7 +1,20 @@
-from telegram import Update
+from typing import Sequence
+
+from telegram import PhotoSize, Update
 from telegram.ext import ContextTypes
 from broker.tasks.create_message_history import task_create_message_history
 from broker.tasks.message import task_response_to_user
+
+# Telegram stores every photo in several sizes (~90/320/800/1280px). The biggest one costs a lot of
+# tokens in GPT without adding much, so take the largest size that fits into this limit.
+MAX_IMAGE_SIDE = 1024
+
+
+def _pick_photo(photos: Sequence[PhotoSize]) -> PhotoSize:
+    fitting = [p for p in photos if max(p.width, p.height) <= MAX_IMAGE_SIDE]
+    if fitting:
+        return max(fitting, key=lambda p: p.width * p.height)
+    return min(photos, key=lambda p: p.width * p.height)
 
 
 async def _get_image_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str | None:
@@ -9,7 +22,7 @@ async def _get_image_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return None
 
     try:
-        photo = update.message.photo[-1]
+        photo = _pick_photo(update.message.photo)
         file = await context.bot.get_file(photo.file_id)
 
         return file.file_path
