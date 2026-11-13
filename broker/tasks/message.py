@@ -6,6 +6,7 @@ from broker import broker
 from lib.database import atomic
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pathlib import Path
 from typing import List
 from broker.tasks.results import ChatMessage
 
@@ -13,6 +14,14 @@ from lib.services import summarize_text, tokenize
 from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
 
+from files.usecases.download_file import DownloadFile
+from files.usecases.edit_file import EditFile
+from files.usecases.list_files import ListFiles
+from files.usecases.read_file import ReadFile
+from files.usecases.send_file import SendFile
+from files.usecases.write_file import WriteFile
+from files.workspace import Workspace
+from llms.tools import build_file_tools
 from llms.usecases.request import LlmRequest
 from messages.repos.messages_repo import new_message_repo
 from messages.repos.topic_embed_repo import new_topic_embed_repo
@@ -32,6 +41,9 @@ async def _response_to_user(
     user_message_text: str,
     user_message_id: str,
     image_url: str | None = None,
+    file_id: str | None = None,
+    file_name: str | None = None,
+    file_size: int | None = None,
 ) -> List[ChatMessage]:
     logger = logging.getLogger(__name__)
     bot = Bot(token=settings.TG_TOKEN)
@@ -50,7 +62,32 @@ async def _response_to_user(
     topic_emb_repo = new_topic_embed_repo(session)
     user_info = await get_user_info(session, user_id)
 
+    workspace = Workspace(root=Path(settings.WORKSPACE_DIR))
+    if file_id:
+        name = file_name or file_id
+        download_file = DownloadFile(bot=bot, workspace=workspace)
+        try:
+            saved_name = await download_file(
+                user_id=user_id, topic_id=topic_id, file_id=file_id, file_name=name, file_size=file_size
+            )
+            user_message_text = f"{user_message_text}\n[Attached file saved to workspace as: {saved_name}]".strip()
+        except Exception as exc:
+            logger.exception("response_to_user: failed to download file %s: %s", file_id, exc)
+            user_message_text = f"{user_message_text}\n[Attached file '{name}' could not be downloaded: {exc}]".strip()
+
+    file_tools = build_file_tools(
+        user_id=user_id,
+        chat_id=chat_id,
+        topic_id=topic_id,
+        list_files=ListFiles(workspace=workspace),
+        read_file=ReadFile(workspace=workspace),
+        write_file=WriteFile(workspace=workspace),
+        edit_file=EditFile(workspace=workspace),
+        send_file=SendFile(bot=bot, workspace=workspace),
+    )
+
     request_to_llm = LlmRequest(
+        tools=file_tools,
         llm=ChatOpenAI(model=user_info["selected_model"]),
         get_long_conversation_history=ReadContextHistory(repo=topic_emb_repo, tokenize=tokenize),
         get_short_conversation_history=ReadShortHistory(repo=message_repo),
@@ -66,7 +103,7 @@ async def _response_to_user(
         image_url=image_url,
     )
 
-    assistant_response: str = provider_result.get("response", "")
+    assistant_response: str = provider_result.get("response", "") or "Done."
     safe_for_send = escape_markdown(assistant_response, version=1)
     await thinking_message.edit_text(safe_for_send, parse_mode=ParseMode.MARKDOWN)
 
@@ -100,5 +137,10 @@ async def task_response_to_user(
     user_message_text: str,
     user_message_id: str,
     image_url: str | None = None,
+    file_id: str | None = None,
+    file_name: str | None = None,
+    file_size: int | None = None,
 ) -> List[ChatMessage]:
-    return await _response_to_user(user_id, chat_id, topic_id, user_message_text, user_message_id, image_url)
+    return await _response_to_user(
+        user_id, chat_id, topic_id, user_message_text, user_message_id, image_url, file_id, file_name, file_size
+    )

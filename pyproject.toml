@@ -37,7 +37,7 @@ palmaray-broker = "broker.__main__:main"
 py-modules = ["main", "settings"]
 
 [tool.setuptools.packages.find]
-include = ["bot*", "broker*", "lib*", "llms*", "messages*", "users*"]
+include = ["bot*", "broker*", "files*", "lib*", "llms*", "messages*", "users*"]
 namespaces = true
 
 [tool.ruff]

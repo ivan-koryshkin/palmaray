@@ -24,7 +24,10 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     image_url = await _get_image_url(update, context)
 
-    if not update.message.text and not image_url:
+    document = update.message.document
+    text = update.message.text or update.message.caption or ""
+
+    if not text and not image_url and not document:
         return
 
     if not update.message.from_user:
@@ -34,9 +37,12 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         update.message.from_user.id,
         update.message.chat_id,
         update.message.message_thread_id or 0,
-        update.message.text or "",
+        text,
         str(update.message.id),
         image_url,
+        document.file_id if document else None,
+        document.file_name if document else None,
+        document.file_size if document else None,
     )
     result = await task.wait_result()
     await task_create_message_history.kiq(result.return_value)

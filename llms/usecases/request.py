@@ -2,7 +2,8 @@ from collections.abc import Callable
 from typing import Any, Awaitable, List, NotRequired, TypedDict
 
 import attrs
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
@@ -27,6 +28,8 @@ class LlmRequest:
     get_short_conversation_history: Callable[[int, int], Awaitable[list[BaseMessage]]]
     get_long_conversation_history: Callable[[int, str], Awaitable[list[dict[str, Any]]]]
     archive_conversation_history: Callable[[int], Awaitable[None]]
+    tools: list[BaseTool] = attrs.field(factory=list)
+    max_tool_iterations: int = 8
 
     async def __call__(
         self, user_message: str, user_id: int, topic_id: int, image_url: str | None = None
@@ -41,9 +44,14 @@ class LlmRequest:
     def _build_system_context(self, long_history: List[dict[str, Any]]) -> str:
         context_parts = [
             "You are a helpful AI assistant. "
-            "Answer only in telegram markdown format"
-            "Based on previous conversations:"
+            "Answer only in telegram markdown format. "
+            "Files the user attaches in chat are saved in your workspace; use the file tools "
+            "(list_files, read_file, write_file, edit_file, send_file) to work with them, "
+            "and send_file to give a resulting file back to the user."
         ]
+        if not long_history:
+            return context_parts[0]
+        context_parts.append("Based on previous conversations:")
 
         for history_item in long_history:
             chunk = history_item.get("chunk", "")
@@ -74,10 +82,8 @@ class LlmRequest:
     async def _build_context_node(self, state: ConversationState) -> ConversationState:
         messages: list[BaseMessage] = []
         long_history = state.get("long_history", [])
+        messages.append(SystemMessage(content=self._build_system_context(long_history)))
         if long_history:
-            system_context = self._build_system_context(long_history)
-            messages.append(SystemMessage(content=system_context))
-
             for history_item in long_history:
                 image_url = history_item.get("image_url")
                 if image_url:
@@ -103,9 +109,37 @@ class LlmRequest:
         messages.append(HumanMessage(content=content_msg))
         return {**state, "messages": messages}
 
+    async def _run_tool(self, call: Any) -> ToolMessage:
+        tool = next((t for t in self.tools if t.name == call["name"]), None)
+        if tool is None:
+            return ToolMessage(content=f"Error: unknown tool {call['name']}", tool_call_id=call["id"])
+        try:
+            result = await tool.ainvoke(call["args"])
+        except Exception as exc:  # bad arguments etc. — let the model see it and retry
+            result = f"Error: {exc}"
+        return ToolMessage(content=str(result), tool_call_id=call["id"])
+
     async def _llm_node(self, state: ConversationState) -> ConversationState:
-        messages = state["messages"]
-        response = await self.llm.ainvoke(messages)
+        messages = list(state["messages"])
+        llm = self.llm.bind_tools(self.tools) if self.tools else self.llm
+
+        response = await llm.ainvoke(messages)
+        for _ in range(self.max_tool_iterations):
+            if not getattr(response, "tool_calls", None):
+                break
+            messages.append(response)
+            for call in response.tool_calls:
+                messages.append(await self._run_tool(call))
+            response = await llm.ainvoke(messages)
+        else:
+            if getattr(response, "tool_calls", None):
+                # iteration budget is spent: force a plain-text answer
+                messages.append(response)
+                messages.extend(
+                    ToolMessage(content="Skipped: tool call limit reached", tool_call_id=c["id"])
+                    for c in response.tool_calls
+                )
+                response = await self.llm.ainvoke(messages)
         content = response.content
         response_str = content if isinstance(content, str) else str(content)
         return {**state, "response": response_str, "message_count": len(messages)}
