@@ -10,9 +10,11 @@ class DeleteOldMessage:
     repo: GenericRepo[MessageModel, MessageSqlFilter]
     max_count: int = 30
 
-    async def __call__(self, topic_id: int, count: int) -> bool:
+    async def __call__(self, user_id: int, topic_id: int, count: int) -> bool:
         messages = await self.repo.list(
-            flt=MessageSqlFilter(user_id=0, topic_id=topic_id, tokenized=None, date_from=None, date_to=None, role=None),
+            flt=MessageSqlFilter(
+                user_id=user_id, topic_id=topic_id, tokenized=None, date_from=None, date_to=None, role=None
+            ),
             limit=count,
             order_by="created_at",
         )

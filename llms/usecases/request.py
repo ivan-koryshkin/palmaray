@@ -27,7 +27,7 @@ class LlmRequest:
     llm: ChatOpenAI
     get_short_conversation_history: Callable[[int, int], Awaitable[list[BaseMessage]]]
     get_long_conversation_history: Callable[[int, str], Awaitable[list[dict[str, Any]]]]
-    archive_conversation_history: Callable[[int], Awaitable[None]]
+    archive_conversation_history: Callable[[int, int], Awaitable[None]]
     tools: list[BaseTool] = attrs.field(factory=list)
     max_tool_iterations: int = 8
 
@@ -38,7 +38,7 @@ class LlmRequest:
         result = await graph.ainvoke(
             {"user_message": user_message, "user_id": user_id, "topic_id": topic_id, "image_url": image_url}
         )
-        await self.archive_conversation_history(topic_id)
+        await self.archive_conversation_history(user_id, topic_id)
         return result
 
     def _build_system_context(self, long_history: List[dict[str, Any]]) -> str:
@@ -51,7 +51,7 @@ class LlmRequest:
         ]
         if not long_history:
             return context_parts[0]
-        context_parts.append("Based on previous conversations:")
+        context_parts.append("Relevant context from previous conversations and documents the user uploaded:")
 
         for history_item in long_history:
             chunk = history_item.get("chunk", "")

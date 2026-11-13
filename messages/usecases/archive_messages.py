@@ -18,17 +18,19 @@ class ArchiveMessages:
     summarize: ISummarize
     arhive_days: int = 3
 
-    async def __call__(self, topic_id: int) -> None:
-        date_from = (datetime.now() - timedelta(days=self.arhive_days)).date()
+    async def __call__(self, user_id: int, topic_id: int) -> None:
+        # only messages older than `arhive_days` are archived (summarized and removed from short history)
+        date_to = (datetime.now() - timedelta(days=self.arhive_days)).date()
         messages = await self.repo_msg.list(
             flt=MessageSqlFilter(
-                user_id=0,
+                user_id=user_id,
                 topic_id=topic_id,
                 tokenized=False,
-                date_from=date_from,
-                date_to=datetime.now().date(),
+                date_from=None,
+                date_to=date_to,
                 role=None,
-            )
+            ),
+            order_by="created_at",
         )
         if len(messages) < 3:
             return
@@ -62,7 +64,9 @@ class ArchiveMessages:
             summarized = await self.summarize(text)
             embedding = await self.tokenize(summarized)
             image_url = next((m.image_url for m in group_msgs if m.image_url), None)
-            return TopicEmbedModel(topic_id=topic_id, chunk=summarized, embedding=embedding, image_url=image_url)
+            return TopicEmbedModel(
+                topic_id=topic_id, user_id=user_id, chunk=summarized, embedding=embedding, image_url=image_url
+            )
 
         tasks = [process_group(g) for g in groups if g]
         topic_embedings = await asyncio.gather(*tasks) if tasks else []

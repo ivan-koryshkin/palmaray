@@ -57,11 +57,7 @@ class GenericRepo(Generic[TModel, TFilter]):
         return bool(result.rowcount) if hasattr(result, "rowcount") else True
 
     async def count(self, flt: TFilter | None = None) -> int:
-        stmt = select(func.count()).select_from(self.model)
-        filter_dict = flt if isinstance(flt, dict) else {}
-        for k, v in filter_dict.items():
-            if hasattr(self.model, k):
-                stmt = stmt.where(getattr(self.model, k) == v)
+        stmt = select(func.count()).select_from(self.model).where(self.build_filter(self.model, flt))  # type: ignore[arg-type]
         result = await self.session.execute(stmt)
         return int(result.scalar_one())
 
@@ -71,13 +67,16 @@ class GenericRepo(Generic[TModel, TFilter]):
         limit: int | None = None,
         order_by: str | None = None,
     ) -> list[TModel]:
-        stmt = select(self.model)
-        filter_dict = flt if isinstance(flt, dict) else {}
-        for k, v in filter_dict.items():
-            if hasattr(self.model, k):
-                stmt = stmt.where(getattr(self.model, k) == v)
-        if order_by is not None and hasattr(self.model, order_by):
-            stmt = stmt.order_by(getattr(self.model, order_by))
+        stmt = select(self.model).where(self.build_filter(self.model, flt))  # type: ignore[arg-type]
+        if order_by is not None:
+            column = getattr(self.model, order_by.removeprefix("-"), None)
+            if column is not None:
+                desc = order_by.startswith("-")
+                stmt = stmt.order_by(column.desc() if desc else column)
+                # timestamps are not unique (now() is the transaction start): break ties by primary key
+                pk = getattr(self.model, "id", None)
+                if pk is not None and column is not pk:
+                    stmt = stmt.order_by(pk.desc() if desc else pk)
         if limit is not None:
             stmt = stmt.limit(limit)
         result = await self.session.execute(stmt)

@@ -10,7 +10,7 @@ class TopicSqlFilter(TypedDict):
 
 
 class MessageSqlFilter(TypedDict):
-    user_id: int
+    user_id: int | None
     topic_id: int | None
     tokenized: bool | None
     date_from: date | None
@@ -20,6 +20,7 @@ class MessageSqlFilter(TypedDict):
 
 class TopicEmbedSqlFilter(TypedDict, total=False):
     topic_id: int
+    user_id: int
     embedding: list[float]
     top_k: int
     max_distance: float

@@ -18,18 +18,50 @@ from files.usecases.download_file import DownloadFile
 from files.usecases.edit_file import EditFile
 from files.usecases.list_files import ListFiles
 from files.usecases.read_file import ReadFile
+from files.usecases.read_text import ReadText
 from files.usecases.send_file import SendFile
 from files.usecases.write_file import WriteFile
-from files.workspace import Workspace
+from files.workspace import Workspace, WorkspaceError
 from llms.tools import build_file_tools
 from llms.usecases.request import LlmRequest
 from messages.repos.messages_repo import new_message_repo
-from messages.repos.topic_embed_repo import new_topic_embed_repo
+from messages.repos.topic_embed_repo import new_topic_embed_repo, new_topic_embed_search
+from messages.repos.topics_repo import new_topic_repo
 from messages.schemas import RoleEnum
 from messages.usecases.archive_messages import ArchiveMessages
+from messages.usecases.index_document import IndexDocument
+from messages.usecases.topic_save import SaveTopic
 from messages.usecases.message_history import ReadContextHistory, ReadShortHistory
 from settings import settings
 from users.services.users import get_user_info
+
+
+async def _index_file(
+    session: AsyncSession, workspace: Workspace, *, user_id: int, topic_id: int, name: str, logger: logging.Logger
+) -> str:
+    """Put the text of the attachment into the vector memory. Never fails the whole request."""
+    try:
+        text = await ReadText(workspace=workspace)(user_id=user_id, topic_id=topic_id, name=name)
+        index_document = IndexDocument(
+            repo=new_topic_embed_repo(session),
+            save_topic=SaveTopic(repo=new_topic_repo(session)),
+            tokenize=tokenize,
+        )
+        # savepoint: a failed insert must not poison the outer transaction
+        async with session.begin_nested():
+            result = await index_document(user_id=user_id, topic_id=topic_id, name=name, text=text)
+    except WorkspaceError:
+        return (
+            "[File is not a text file, so its content was not added to memory; it is still available in the workspace]"
+        )
+    except Exception as exc:
+        logger.exception("response_to_user: failed to index file %s: %s", name, exc)
+        return "[File content could not be added to memory]"
+
+    if not result.chunks:
+        return "[File is empty]"
+    suffix = " (only the beginning of the file was indexed, use read_file for the rest)" if result.truncated else ""
+    return f"[File content was added to memory in {result.chunks} parts{suffix}]"
 
 
 @atomic
@@ -71,6 +103,10 @@ async def _response_to_user(
                 user_id=user_id, topic_id=topic_id, file_id=file_id, file_name=name, file_size=file_size
             )
             user_message_text = f"{user_message_text}\n[Attached file saved to workspace as: {saved_name}]".strip()
+            index_note = await _index_file(
+                session, workspace, user_id=user_id, topic_id=topic_id, name=saved_name, logger=logger
+            )
+            user_message_text = f"{user_message_text}\n{index_note}".strip()
         except Exception as exc:
             logger.exception("response_to_user: failed to download file %s: %s", file_id, exc)
             user_message_text = f"{user_message_text}\n[Attached file '{name}' could not be downloaded: {exc}]".strip()
@@ -89,7 +125,7 @@ async def _response_to_user(
     request_to_llm = LlmRequest(
         tools=file_tools,
         llm=ChatOpenAI(model=user_info["selected_model"]),
-        get_long_conversation_history=ReadContextHistory(repo=topic_emb_repo, tokenize=tokenize),
+        get_long_conversation_history=ReadContextHistory(search=new_topic_embed_search(session), tokenize=tokenize),
         get_short_conversation_history=ReadShortHistory(repo=message_repo),
         archive_conversation_history=ArchiveMessages(
             repo_msg=message_repo, repo_topic_embed=topic_emb_repo, tokenize=tokenize, summarize=summarize_text

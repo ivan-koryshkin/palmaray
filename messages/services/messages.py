@@ -40,6 +40,6 @@ async def get_old_messages(session: AsyncSession) -> list[MessageModel]:
     date_from = (datetime.now() - timedelta(days=3)).date()
     return await message_repo.list(
         flt=MessageSqlFilter(
-            user_id=0, topic_id=None, tokenized=None, date_from=date_from, date_to=datetime.now().date(), role=None
+            user_id=None, topic_id=None, tokenized=None, date_from=date_from, date_to=datetime.now().date(), role=None
         )
     )
