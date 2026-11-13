@@ -20,7 +20,7 @@ class SaveMessage:
         text: str,
         topic_id: int,
         role: RoleEnum,
-        user_id: int | None = None,
+        user_id: int,
         image_url: str | None = None,
     ) -> int | None:
         msg = await self.repo.read(message_id)

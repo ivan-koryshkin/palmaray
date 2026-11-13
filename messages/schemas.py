@@ -5,8 +5,9 @@ from enum import StrEnum
 from typing import NotRequired, TypedDict
 
 
-class TopicSqlFilter(TypedDict):
-    chat_id: int
+class TopicSqlFilter(TypedDict, total=False):
+    id: int
+    user_id: int
 
 
 class MessageSqlFilter(TypedDict):

@@ -11,8 +11,10 @@ def build_topic_where(model: TopicModel, flt: TopicSqlFilter | None) -> ColumnEl
         return true()
 
     conds: list[ColumnElement[bool]] = []
-    if flt.get("chat_id") is not None:
-        conds.append(TopicModel.chat_id == flt["chat_id"])
+    if flt.get("id") is not None:
+        conds.append(TopicModel.id == flt["id"])
+    if flt.get("user_id") is not None:
+        conds.append(TopicModel.user_id == flt["user_id"])
     return and_(*conds) if conds else true()
 
 
