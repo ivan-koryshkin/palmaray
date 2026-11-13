@@ -1,3 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "palmaray"
+version = "0.1.0"
+description = "Telegram assistant that uses LLMs, stores encrypted messages in Postgres (pgvector)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "attrs",
+    "fastapi",
+    "pydantic",
+    "pydantic-settings",
+    "SQLAlchemy",
+    "alembic",
+    "asyncpg",
+    "greenlet",
+    "aiogram",
+    "python-telegram-bot",
+    "langchain",
+    "openai",
+    "langgraph",
+    "pgvector",
+    "langchain-openai",
+    "cryptography",
+    "taskiq",
+    "taskiq-redis",
+]
+
+[project.scripts]
+palmaray = "main:main"
+palmaray-broker = "broker.__main__:main"
+
+[tool.setuptools]
+py-modules = ["main", "settings"]
+
+[tool.setuptools.packages.find]
+include = ["bot*", "broker*", "lib*", "llms*", "messages*", "users*"]
+namespaces = true
+
 [tool.ruff]
 line-length = 120
 ignore = ["E402", "F403"]
